@@ -40,8 +40,8 @@ class Newpost(Handler):
 		if title and entry:
 			a = Blogpost(title=title, entry=entry)
 			a.put()
-
-			self.redirect("/blog")
+			newpostkey = Blogpost.key(a).id()
+			self.redirect("/blog/" + str(newpostkey))
 		else:
 			error = "we need both title and a new entry"
 			self.render_newposts(title, entry, error)
@@ -70,6 +70,7 @@ class ViewPostHandler(Handler):
 
 
 app = webapp2.WSGIApplication([
+	('/', Blogpage),
 	('/newpost', Newpost),
 	('/blog', Blogpage),
 	webapp2.Route('/blog/<id:\d+>', ViewPostHandler)
