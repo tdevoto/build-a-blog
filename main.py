@@ -20,19 +20,18 @@ class Handler(webapp2.RequestHandler):
 
 
 class Blogpost(db.Model):
+
 	title = db.StringProperty(required = True)
 	entry = db.TextProperty(required = True)
 	created = db.DateTimeProperty(auto_now_add = True)
 
-
-class MainHandler(Handler):
-
-	def render_front(self, title="", entry="", error=""):
-		blogposts = db.GqlQuery("select * from Blogpost order by created desc")
-		self.render("main.html", title=title, entry=entry, error=error, blogposts=blogposts)
+class Newpost(Handler):
 
 	def get(self):
-		self.render_front()
+		self.render("newpost.html")
+
+	def render_newposts(self, title="", entry="", error=""):
+		self.render("newpost.html", title=title, entry=entry, error=error)
 
 	def post(self):
 		title = self.request.get("title")
@@ -42,11 +41,36 @@ class MainHandler(Handler):
 			a = Blogpost(title=title, entry=entry)
 			a.put()
 
-			self.redirect("/")
+			self.redirect("/blog")
 		else:
 			error = "we need both title and a new entry"
-			self.render_front(title, entry, error)
+			self.render_newposts(title, entry, error)
+
+
+class Blogpage(Handler):
+
+	def render_blogs(self, title="", entry="", error=""):
+		blogposts = db.GqlQuery("select * from Blogpost order by created desc limit 5")
+		self.render("blogs.html", title=title, entry=entry, error=error, blogposts=blogposts)
+
+	def get(self):
+		self.render_blogs()
+
+class ViewPostHandler(Handler):
+
+	def get(self, id):
+		singlepost = Blogpost.get_by_id(int(id), parent=None)
+		postid = Blogpost.key(singlepost).id()
+
+		if singlepost:
+			self.render("singlepost.html", singlepost=singlepost, postid=postid)
+		else:
+			self.response.write("There is no post with that ID")
+
+
 
 app = webapp2.WSGIApplication([
-	('/', MainHandler)
+	('/newpost', Newpost),
+	('/blog', Blogpage),
+	webapp2.Route('/blog/<id:\d+>', ViewPostHandler)
 ], debug=True)
